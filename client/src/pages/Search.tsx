@@ -84,8 +84,8 @@ export default function Search() {
 
   const handleFollow = async (userId: string) => {
     try {
-      await api.put(`/users/${userId}/follow`);
-      alert('Followed successfully!');
+      await api.post(`/friend-requests/${userId}`);
+      alert('Friend request sent!');
     } catch (error) {
       console.error('Failed to follow', error);
     }

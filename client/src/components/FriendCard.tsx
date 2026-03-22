@@ -15,17 +15,34 @@ export default function FriendCard({ request, variant = 'request' }: FriendCardP
   const handleFollow = async () => {
     try {
       setLoading(true);
-      await api.put(`/users/${request.id}/follow`);
+      if (variant === 'suggestion') {
+        const targetId = request.user?.id || (request as any).user?._id || request.id;
+        await api.post(`/friend-requests/${targetId}`);
+      } else {
+        const requestId = request.id || (request as any)._id;
+        await api.put(`/friend-requests/${requestId}/accept`);
+      }
       setFollowed(true);
     } catch (error) {
-      console.error('Failed to follow user', error);
+      console.error('Failed to perform action', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDecline = () => {
-    setDeclined(true);
+  const handleDecline = async () => {
+    try {
+      setLoading(true);
+      if (variant === 'request') {
+        const requestId = request.id || (request as any)._id;
+        await api.put(`/friend-requests/${requestId}/reject`);
+        setDeclined(true);
+      }
+    } catch (error) {
+      console.error('Failed to reject', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (declined) return null;
@@ -45,7 +62,7 @@ export default function FriendCard({ request, variant = 'request' }: FriendCardP
             className={`text-xs font-bold flex items-center gap-1 ${followed ? 'text-on-surface-variant' : 'text-primary hover:text-primary-container'}`}
           >
             <span className="material-symbols-outlined text-sm">{followed ? 'check' : 'person_add'}</span>
-            {followed ? 'Following' : 'Add Friend'}
+            {followed ? 'Requested' : 'Add Friend'}
           </button>
         </div>
       </div>

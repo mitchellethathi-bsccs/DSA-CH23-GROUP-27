@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Post from '../models/Post';
 import User from '../models/User';
+import { getIo, getUserSocket } from '../sockets';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -24,6 +25,10 @@ export const createPost = async (req: AuthRequest, res: Response): Promise<void>
     
     // Populate author before returning
     await createdPost.populate('author', 'name avatar title');
+
+    // Emit real-time event
+    const io = getIo();
+    io.emit('post_created', createdPost);
 
     res.status(201).json(createdPost);
   } catch (error) {

@@ -5,12 +5,14 @@ import {
   followUser,
   unfollowUser,
   searchUsers,
+  getHomepageSidebarData,
 } from '../controllers/userController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 router.route('/').get(protect, searchUsers);
+router.route('/homepage-sidebar').get(protect, getHomepageSidebarData);
 router.route('/profile').put(protect, updateUserProfile);
 router.route('/:id').get(protect, getUserProfile);
 router.route('/:id/follow').put(protect, followUser);

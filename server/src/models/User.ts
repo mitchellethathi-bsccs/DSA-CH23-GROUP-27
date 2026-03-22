@@ -11,6 +11,7 @@ export interface IUser extends Document {
   location?: string;
   work?: string;
   school?: string;
+  birthday?: Date;
   followers: number;
   friends: mongoose.Types.ObjectId[];
   isOnline: boolean;
@@ -30,6 +31,7 @@ const userSchema = new Schema<IUser>(
     location: { type: String, default: '' },
     work: { type: String, default: '' },
     school: { type: String, default: '' },
+    birthday: { type: Date },
     followers: { type: Number, default: 0 },
     friends: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     isOnline: { type: Boolean, default: false },

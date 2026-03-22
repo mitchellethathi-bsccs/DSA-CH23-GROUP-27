@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { Notification } from '../types';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import FriendCard from '../components/FriendCard';
 
 // ===== DSA: HashMap (Map) for Notification Grouping =====
 // Groups notifications into time-based buckets using Map for O(1) per-item classification
@@ -46,7 +47,31 @@ function timeAgo(timestamp: number): string {
 export default function Notifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [friendRequests, setFriendRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchRequests = async () => {
+      try {
+        const { data } = await api.get('/friend-requests');
+        const formatted = data.map((r: any) => ({
+          id: r._id,
+          user: {
+            name: r.sender.name,
+            avatar: r.sender.avatar,
+            title: r.sender.title
+          },
+          coverImage: 'https://images.unsplash.com/photo-1549213578-834f8287413c?q=80&w=400&auto=format&fit=crop',
+          mutualFriends: 0
+        }));
+        setFriendRequests(formatted);
+      } catch (e) {
+        console.error('Failed to get friend requests', e);
+      }
+    };
+    fetchRequests();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -112,6 +137,17 @@ export default function Notifications() {
         </header>
 
         <div className="flex flex-col gap-8">
+          {friendRequests.length > 0 && (
+            <section>
+              <h2 className="text-on-surface font-semibold text-sm mb-4 tracking-wide">Friend Requests</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {friendRequests.map(req => (
+                  <FriendCard key={req.id} request={req} variant="request" />
+                ))}
+              </div>
+            </section>
+          )}
+
           {loading ? (
             <div className="text-center py-8 text-on-surface-variant">Loading notifications...</div>
           ) : (

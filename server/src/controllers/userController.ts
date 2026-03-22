@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import { getOnlineUserIds } from '../sockets';
 
 // Extending Request to include user
 interface AuthRequest extends Request {
@@ -146,6 +147,78 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
       .limit(10); // Limit results for performance
 
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: String(error) });
+  }
+};
+
+// @desc    Get homepage sidebar data (suggestions, birthdays, online friends)
+// @route   GET /api/users/homepage-sidebar
+// @access  Private
+export const getHomepageSidebarData = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUser = await User.findById(req.user._id).populate('friends');
+    if (!currentUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const onlineIds = getOnlineUserIds();
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentDate = today.getDate();
+
+    const friendsList: any[] = currentUser.friends;
+
+    // 1. Online Friends
+    const onlineFriends = friendsList.filter(f => onlineIds.includes(f._id.toString()));
+
+    // 2. Birthdays (today)
+    const birthdays = friendsList.filter(f => {
+      if (!f.birthday) return false;
+      const bDay = new Date(f.birthday);
+      return bDay.getMonth() === currentMonth && bDay.getDate() === currentDate;
+    });
+
+    // 3. Friend Suggestions (BFS - distance 2)
+    const friendIds = friendsList.map(f => f._id.toString());
+    const populatedFriends = await User.find({ _id: { $in: friendIds } }).select('friends');
+    
+    const mutualMap = new Map<string, { user: string; count: number }>();
+
+    for (const friend of populatedFriends) {
+      const secondDegreeIds = friend.friends.map((id: any) => id.toString());
+      
+      for (const currentSecondDegree of secondDegreeIds) {
+        if (currentSecondDegree === currentUser._id.toString()) continue;
+        if (friendIds.includes(currentSecondDegree)) continue;
+
+        if (mutualMap.has(currentSecondDegree)) {
+          mutualMap.get(currentSecondDegree)!.count++;
+        } else {
+          mutualMap.set(currentSecondDegree, { user: currentSecondDegree, count: 1 });
+        }
+      }
+    }
+
+    const sortedSuggestions = Array.from(mutualMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const suggestionUserIds = sortedSuggestions.map(s => s.user);
+    const suggestionUsers = await User.find({ _id: { $in: suggestionUserIds } }).select('name avatar title');
+
+    const formattedSuggestions = sortedSuggestions.map(s => {
+      const user = suggestionUsers.find(u => u._id.toString() === s.user);
+      return { user, mutualCount: s.count };
+    }).filter(s => s.user != null);
+
+    res.json({
+      onlineFriends: onlineFriends.map(f => ({ _id: f._id, name: f.name, avatar: f.avatar })),
+      birthdays: birthdays.map(f => ({ _id: f._id, name: f.name, avatar: f.avatar })),
+      suggestions: formattedSuggestions
+    });
+
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: String(error) });
   }

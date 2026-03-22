@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
 
 export interface UserInfo {
   _id: string;
@@ -17,6 +18,7 @@ interface AuthContextType {
   login: (userData: UserInfo) => void;
   logout: () => void;
   loading: boolean;
+  socket: Socket | null;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -24,6 +26,7 @@ export const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   loading: true,
+  socket: null,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -31,6 +34,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,6 +51,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+      const newSocket = io(backendUrl);
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        newSocket.emit('register', user._id);
+      });
+
+      return () => {
+        newSocket.close();
+      };
+    } else if (!user && socket) {
+      socket.close();
+      setSocket(null);
+    }
+  }, [user]);
+
   const login = (userData: UserInfo) => {
     setUser(userData);
     localStorage.setItem('userInfo', JSON.stringify(userData));
@@ -59,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, socket }}>
       {children}
     </AuthContext.Provider>
   );
