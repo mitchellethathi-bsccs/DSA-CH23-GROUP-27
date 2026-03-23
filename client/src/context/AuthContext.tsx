@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { createContext, useState, useEffect, type ReactNode, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 
@@ -11,6 +11,8 @@ export interface UserInfo {
   isAdmin?: boolean;
   isBanned?: boolean;
   token: string;
+  friends?: any[];
+  createdAt?: string;
 }
 
 interface AuthContextType {

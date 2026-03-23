@@ -145,7 +145,7 @@ export default function Profile() {
               </div>
               <div className="flex items-start gap-3 text-on-surface-variant">
                 <span className="material-symbols-outlined text-[20px] text-outline mt-0.5">calendar_month</span>
-                <span>Joined <span className="font-bold text-on-surface">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span></span>
+                <span>Joined <span className="font-bold text-on-surface">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</span></span>
               </div>
             </div>
             
