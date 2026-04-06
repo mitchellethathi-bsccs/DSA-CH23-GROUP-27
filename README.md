@@ -93,3 +93,10 @@ If you need to make your first account an administrator for testing the Admin Da
 ```bash
 npx tsx makeAdmin.ts <your_account_email_here>
 ```
+
+Members and roles
+1.Mitchelle thathi-report,readme and YouTube video 
+2.Carl mugo-post and likes 
+3.Davine Chelagat -Timeline feed generation 
+4.Gift ndegi -mutual friend and Friend recommendations 
+5.Telvin mwika -search bar and auto complete 
